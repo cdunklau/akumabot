@@ -1,0 +1,4 @@
+*.py[co]
+akumabot.conf
+venv/
+_trial_temp/
