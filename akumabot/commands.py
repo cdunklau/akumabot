@@ -2,7 +2,9 @@ import functools
 import re
 import shlex
 import random
+import datetime
 
+import pytz
 from zope.interface import Interface, Attribute, directlyProvides
 from zope.interface.verify import verifyObject
 from twisted.python import log
@@ -305,3 +307,82 @@ class CalcCommand(object):
             return 'Result: {0:.6G}'.format(result)
         except CalculatorParseError:
             return "I didn't understand {0}".format(expression)
+
+
+_iso_fmt = '%Y-%m-%dT%H:%M:%S'
+
+
+@registry.register_class
+class TimeCommand(object):
+    name = 'time'
+    admin_only = False
+    pm_only = False
+    channel_only = False
+    usage = (
+        '{0} <time> [<fromzone>] <tozone>  Convert time from one '
+        'time zone to another. <time> may be "now" or a particular time '
+        'in YYYY-MM-DDTHH:mm:SS or HH:mm:SS format'
+    )
+
+    def run(self, bot, channel, nickname, command_args):
+        if len(command_args) not in (2, 3):
+            return self.usage.format(self.name)
+        time_string, tozone_string = command_args[0], command_args[-1]
+        fromzone_string = None
+        if len(command_args) == 3:
+            fromzone_string = command_args[1]
+
+        if time_string == 'now':
+            toconvert = datetime.datetime.utcnow()
+        else:
+            toconvert = self.parse_time(time_string)
+            if toconvert is None:
+                return "I didn't understand that time {0!r}".format(
+                    time_string)
+
+        fromzone = self.parse_timezone(fromzone_string)
+        if fromzone is None:
+            return "I didn't understand the time zone {0!r}".format(
+                fromzone_string)
+        tozone = self.parse_timezone(tozone_string)
+        if tozone is None:
+            return "I didn't understand the time zone {0!r}".format(
+                tozone_string)
+
+        fromtime = fromzone.localize(toconvert)
+        totime = fromtime.astimezone(tozone)
+
+        fmt = (
+            '{fromtime} {fromoffset} ({fromtz}) -> '
+            '{totime} {tooffset} ({totz})'
+        )
+        return fmt.format(
+            fromtime=fromtime.strftime(_iso_fmt),
+            fromoffset=fromtime.strftime('%z'),
+            fromtz=fromtime.strftime('%Z'),
+            totime=totime.strftime(_iso_fmt),
+            tooffset=totime.strftime('%z'),
+            totz=totime.strftime('%Z'),
+        )
+
+
+    def parse_time(self, time_string):
+        try:
+            return datetime.datetime.strptime(time_string, _iso_fmt)
+        except ValueError:
+            try:
+                time = datetime.datetime.strptime(
+                    time_string, '%H:%M:%S').time()
+            except ValueError:
+                return None
+            now = datetime.datetime.utcnow()
+            return datetime.datetime.combine(now.date(), time)
+
+    def parse_timezone(self, timezone_string):
+        if timezone_string is None:
+            return pytz.utc
+        try:
+            return pytz.timezone(timezone_string)
+        except pytz.exceptions.UnknownTimeZoneError:
+            return None
+
