@@ -12,4 +12,4 @@ if __name__ == '__main__':
     with open('akumabot.conf', 'rb') as f:
         config = process_config_file(f)
     bot = AkumaBot(config)
-    task.react(bot.main, ['tcp:irc.freenode.net:6667'])
+    task.react(bot.main, ['ssl:host=irc.freenode.net:port=6697'])
