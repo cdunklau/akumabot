@@ -2,7 +2,9 @@
 AkumaBot
 ########
 
-Demonstration IRC bot.
+Demonstration IRC bot. Works on Freenode_.
+
+.. _Freenode: https://freenode.net/
 
 
 Features
@@ -31,3 +33,31 @@ Administrator Commands
 -   Leave channel
 -   Kick user
 -   Quit
+
+
+Installation
+============
+
+Python 2.7 is supported. Create a virtualenv::
+
+    virtualenv venv
+
+Install requirements::
+
+    venv/bin/pip install -r requirements.txt
+
+Configure it. Here's an example config file, put yours into akumabot.conf::
+
+    [akumabot]
+    nickname = myakumabot
+    password = secret
+    channels =
+        ##yournick
+        #botters-test
+    admins =
+        yournick
+    debug = true
+
+Run it::
+
+    venv/bin/python -m akumabot.main
